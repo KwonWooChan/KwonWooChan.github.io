@@ -3,100 +3,625 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>컴퓨터 공학과 대학교 찾기</title>
+    <title>테트리스 게임</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Inter 폰트 적용 */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 1.5rem; /* Slightly reduced padding for smaller screens */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 95%; /* Increased max-width for better use of space */
+            margin: 0.75rem; /* Slightly reduced margin */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+        canvas {
+            background-color: #1a202c; /* Dark background for the game board */
+            border: 5px solid #4a5568; /* Darker border */
+            border-radius: 0.75rem; /* Rounded corners for canvas */
+            display: block;
+            margin-bottom: 1.5rem;
+            touch-action: none; /* Disable default touch actions */
+            max-width: 100%; /* Ensure canvas scales down */
+            height: auto; /* Maintain aspect ratio */
+        }
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px; /* Limit control panel width */
+        }
+        .control-button {
+            @apply bg-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-200 ease-in-out transform hover:scale-105 hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300;
+        }
+        .control-button.red {
+            @apply bg-red-500 hover:bg-red-600 focus:ring-red-300;
+        }
+        .control-button.green {
+            @apply bg-green-500 hover:bg-green-600 focus:ring-green-300;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .game-info div {
+            background-color: #edf2f7;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+        #nextPieceCanvas {
+            background-color: #1a202c;
+            border: 3px solid #4a5568;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .game-status {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e53e3e; /* Red for game over */
+            margin-top: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .mobile-controls {
+            display: none; /* Hidden by default */
+            grid-template-columns: repeat(3, 1fr); /* 3 columns for left, down, right */
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1.5rem;
+        }
+        .mobile-controls .control-button {
+            font-size: 1.5rem;
+            padding: 1rem;
+        }
+        .mobile-controls .center-button {
+            grid-column: 2; /* Center the down button */
+        }
+        .mobile-rotate {
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .game-container {
+                padding: 1rem;
+                margin: 0.5rem;
+            }
+            .game-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            }
+            .game-info div {
+                width: 90%; /* Make info boxes wider on small screens */
+                text-align: center;
+                padding: 0.5rem 1rem;
+            }
+            .controls-panel {
+                grid-template-columns: 1fr; /* Stack buttons on small screens */
+            }
+            .mobile-controls {
+                display: grid; /* Show mobile controls on small screens */
+            }
+            .desktop-controls {
+                display: none; /* Hide desktop controls on small screens */
+            }
+            h1 {
+                font-size: 2.5rem; /* Adjust title size for small screens */
+                margin-bottom: 1rem;
+            }
+            .game-status {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
-<body class="p-4 sm:p-6 md:p-8">
-    <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">컴퓨터 공학과 대학교 찾기 🎓</h1>
+<body>
+    <div class="game-container">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-6">테트리스</h1>
 
-        <!-- Search Input -->
-        <div class="mb-6">
-            <input type="text" id="searchInput" placeholder="대학교 이름으로 검색..."
-                   class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+        <div class="game-info">
+            <div>점수: <span id="score">0</span></div>
+            <div>다음 블록: <canvas id="nextPieceCanvas" class="rounded-lg"></canvas></div>
         </div>
 
-        <!-- University List -->
-        <div id="universityList" class="space-y-4">
-            <!-- University items will be loaded here by JavaScript -->
+        <canvas id="tetrisCanvas"></canvas>
+
+        <div id="gameOverMessage" class="game-status hidden">게임 오버!</div>
+
+        <div class="controls-panel desktop-controls">
+            <button id="startButton" class="control-button green">시작</button>
+            <button id="pauseButton" class="control-button">일시정지</button>
+            <button id="restartButton" class="control-button red">다시 시작</button>
         </div>
 
-        <!-- No Results Message -->
-        <div id="noResults" class="hidden text-center text-gray-500 mt-8 p-4 bg-gray-100 rounded-lg">
-            <p>검색 결과가 없습니다. 다른 대학교를 검색해 보세요.</p>
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <button id="moveLeftButton" class="control-button">&larr;</button>
+            <button id="moveDownButton" class="control-button center-button">&darr;</button>
+            <button id="moveRightButton" class="control-button">&rarr;</button>
         </div>
+        <div class="mobile-rotate">
+            <button id="rotateButton" class="control-button w-full">회전</button>
+        </div>
+
     </div>
 
     <script>
-        // Sample data for universities with Computer Science departments
-        // In a real application, this data would come from a database or API
-        const universities = [
-            { name: "서울대학교", location: "서울", description: "대한민국 최고의 연구 중심 대학교 중 하나입니다. 컴퓨터 공학부는 깊이 있는 이론과 실용적인 기술을 모두 다룹니다." },
-            { name: "카이스트 (KAIST)", location: "대전", description: "과학 기술 분야의 선두 주자로, 컴퓨터 과학과는 인공지능, 데이터 과학, 소프트웨어 공학 등 다양한 분야에서 세계적인 연구를 수행합니다." },
-            { name: "포항공과대학교 (POSTECH)", location: "포항", description: "소수 정예의 연구 중심 대학으로, 컴퓨터 공학과는 고급 이론과 실습을 통해 미래 기술을 선도하는 인재를 양성합니다." },
-            { name: "고려대학교", location: "서울", description: "전통과 혁신을 겸비한 명문 사학입니다. 컴퓨터학과에서는 다양한 전공 트랙을 제공하여 학생들이 전문성을 키울 수 있도록 돕습니다." },
-            { name: "연세대학교", location: "서울", description: "글로벌 인재 양성을 목표로 하는 대학교입니다. 컴퓨터과학과는 최신 기술 동향을 반영한 교육 과정을 운영합니다." },
-            { name: "성균관대학교", location: "서울/수원", description: "오랜 역사와 첨단 기술이 조화된 대학입니다. 소프트웨어학과와 컴퓨터공학과가 있으며, 삼성과의 협력으로 시너지를 창출합니다." },
-            { name: "한양대학교", location: "서울/안산", description: "실용 학풍을 강조하는 대학교입니다. 컴퓨터소프트웨어학부와 컴퓨터공학과는 산업 현장에 필요한 실무 능력을 배양합니다." },
-            { name: "서강대학교", location: "서울", description: "융합 교육을 지향하는 대학교입니다. 컴퓨터공학과에서는 소프트웨어 개발, 인공지능, 네트워크 등 다양한 분야를 학습합니다." },
-            { name: "경희대학교", location: "서울/용인", description: "아름다운 캠퍼스와 더불어 국제적인 교육 환경을 제공합니다. 컴퓨터공학과는 창의적이고 실용적인 인재 양성에 힘씁니다." },
-            { name: "중앙대학교", location: "서울/안성", description: "다양한 분야에서 강점을 가진 대학교입니다. 소프트웨어학과는 급변하는 IT 환경에 발맞춘 교육을 제공합니다." },
-            { name: "이화여자대학교", location: "서울", description: "여성 교육의 선두 주자로, 컴퓨터공학전공은 여성 IT 전문가 양성에 기여합니다." },
-            { name: "부산대학교", location: "부산", description: "영남권 거점 국립대학교로, 컴퓨터공학과는 지역 사회와 산업 발전에 기여하는 인재를 양성합니다." },
-            { name: "경북대학교", location: "대구", description: "대구/경북 지역의 대표 국립대학교입니다. 컴퓨터학부는 기초부터 심화까지 체계적인 교육 과정을 제공합니다." },
-            { name: "아주대학교", location: "수원", description: "실용 학풍을 가진 대학교로, 소프트웨어학과와 사이버보안학과 등 IT 특성화 학과를 운영합니다." },
-            { name: "국민대학교", location: "서울", description: "자동차, 디자인, IT 분야에서 강점을 가진 대학교입니다. 소프트웨어학부는 실무 중심의 교육을 강조합니다." },
-            { name: "강원대학교", location: "춘천/삼척", description: "강원 지역 거점 국립대학교로, 컴퓨터공학과는 인공지능, 빅데이터 등 4차 산업혁명 시대에 필요한 인재를 양성합니다." },
-            { name: "단국대학교", location: "용인/천안", description: "죽전 캠퍼스에 소프트웨어학과, 컴퓨터공학과 등을 운영하며, IT 융합 및 실용적인 교육을 제공합니다." }
-        ];
+        // Canvas elements and contexts
+        const canvas = document.getElementById('tetrisCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextPieceCanvas = document.getElementById('nextPieceCanvas');
+        const nextCtx = nextPieceCanvas.getContext('2d');
 
-        const searchInput = document.getElementById('searchInput');
-        const universityList = document.getElementById('universityList');
-        const noResults = document.getElementById('noResults');
+        // Game information elements
+        const scoreDisplay = document.getElementById('score');
+        const gameOverMessage = document.getElementById('gameOverMessage');
 
-        // Function to display universities
-        function displayUniversities(filteredUniversities) {
-            universityList.innerHTML = ''; // Clear current list
-            if (filteredUniversities.length === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-                filteredUniversities.forEach(uni => {
-                    const uniCard = `
-                        <div class="bg-gray-50 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-                            <h2 class="text-xl font-semibold text-blue-700 mb-2">${uni.name}</h2>
-                            <p class="text-gray-600 mb-2"><strong>위치:</strong> ${uni.location}</p>
-                            <p class="text-gray-700 text-sm leading-relaxed">${uni.description}</p>
-                        </div>
-                    `;
-                    universityList.innerHTML += uniCard;
-                });
+        // Control buttons
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const restartButton = document.getElementById('restartButton');
+        const moveLeftButton = document.getElementById('moveLeftButton');
+        const moveRightButton = document.getElementById('moveRightButton');
+        const moveDownButton = document.getElementById('moveDownButton');
+        const rotateButton = document.getElementById('rotateButton');
+
+        // Game constants
+        const COLS = 10; // Number of columns on the game board
+        const ROWS = 20; // Number of rows on the game board
+        let BLOCK_SIZE; // Size of each block in pixels, will be calculated dynamically
+
+        // Game state variables
+        let board = []; // The game board grid
+        let currentPiece; // The current falling Tetromino
+        let nextPiece; // The next Tetromino to fall
+        let currentX, currentY; // Position of the current piece
+        let score = 0; // Player's score
+        let gameOver = true; // Game over flag
+        let gameInterval; // Interval for the game loop
+        let isPaused = false; // Pause flag
+
+        // Tetromino shapes and colors
+        const TETROMINOES = {
+            'I': {
+                shape: [
+                    [0, 0, 0, 0],
+                    [1, 1, 1, 1],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                ],
+                color: '#4dc0b5' // Teal
+            },
+            'J': {
+                shape: [
+                    [1, 0, 0],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#667eea' // Indigo
+            },
+            'L': {
+                shape: [
+                    [0, 0, 1],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#f6ad55' // Orange
+            },
+            'O': {
+                shape: [
+                    [1, 1],
+                    [1, 1]
+                ],
+                color: '#fbd38d' // Yellow
+            },
+            'S': {
+                shape: [
+                    [0, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0]
+                ],
+                color: '#48bb78' // Green
+            },
+            'T': {
+                shape: [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#a78bfa' // Purple
+            },
+            'Z': {
+                shape: [
+                    [1, 1, 0],
+                    [0, 1, 1],
+                    [0, 0, 0]
+                ],
+                color: '#fc8181' // Red
+            }
+        };
+
+        // Function to draw a single square block
+        function drawSquare(x, y, color, context) {
+            context.fillStyle = color;
+            context.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            context.strokeStyle = '#2d3748'; // Darker border for blocks
+            context.lineWidth = 1;
+            context.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        }
+
+        // Function to initialize the game board
+        function initBoard() {
+            for (let r = 0; r < ROWS; r++) {
+                board[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    board[r][c] = 0; // 0 represents an empty cell
+                }
             }
         }
 
-        // Event listener for search input
-        searchInput.addEventListener('keyup', (event) => {
-            const searchTerm = event.target.value.toLowerCase();
-            const filtered = universities.filter(uni =>
-                uni.name.toLowerCase().includes(searchTerm) ||
-                uni.location.toLowerCase().includes(searchTerm) ||
-                uni.description.toLowerCase().includes(searchTerm)
+        // Function to draw the game board
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the entire canvas
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c] !== 0) {
+                        drawSquare(c, r, board[r][c], ctx);
+                    }
+                }
+            }
+        }
+
+        // Function to generate a random Tetromino
+        function generatePiece() {
+            const keys = Object.keys(TETROMINOES);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            return TETROMINOES[randomKey];
+        }
+
+        // Function to draw a piece (current or next)
+        function drawPiece(piece, x, y, context) {
+            for (let r = 0; r < piece.shape.length; r++) {
+                for (let c = 0; c < piece.shape[r].length; c++) {
+                    if (piece.shape[r][c]) {
+                        drawSquare(x + c, y + r, piece.color, context);
+                    }
+                }
+            }
+        }
+
+        // Function to draw the next piece in its dedicated canvas
+        function drawNextPiece() {
+            nextCtx.clearRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
+            if (!nextPiece) return; // Don't draw if nextPiece is not yet defined
+
+            // Center the next piece in its smaller canvas
+            const pieceShapeSize = nextPiece.shape.length;
+            // Calculate padding to center the piece
+            const paddingX = (nextPieceCanvas.width / BLOCK_SIZE - pieceShapeSize) / 2;
+            const paddingY = (nextPieceCanvas.height / BLOCK_SIZE - pieceShapeSize) / 2;
+
+            drawPiece(nextPiece, paddingX, paddingY, nextCtx);
+        }
+
+        // Function to check for collisions
+        function canMove(piece, newX, newY, newShape) {
+            for (let r = 0; r < newShape.length; r++) {
+                for (let c = 0; c < newShape[r].length; c++) {
+                    if (newShape[r][c] !== 0) { // If it's a block of the piece
+                        const boardX = newX + c;
+                        const boardY = newY + r;
+
+                        // Check boundaries
+                        if (boardX < 0 || boardX >= COLS || boardY >= ROWS) {
+                            return false;
+                        }
+                        // Check for collision with existing blocks on the board
+                        if (boardY < 0) continue; // Allow pieces to spawn above the board
+                        if (board[boardY][boardX] !== 0) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Function to lock the piece in place on the board
+        function lockPiece() {
+            for (let r = 0; r < currentPiece.shape.length; r++) {
+                for (let c = 0; c < currentPiece.shape[r].length; c++) {
+                    if (currentPiece.shape[r][c] !== 0) {
+                        const boardX = currentX + c;
+                        const boardY = currentY + r;
+                        if (boardY < 0) { // Game over if piece locks above the top
+                            endGame();
+                            return;
+                        }
+                        board[boardY][boardX] = currentPiece.color;
+                    }
+                }
+            }
+            clearLines(); // Check for full lines after locking
+            spawnPiece(); // Generate a new piece
+        }
+
+        // Function to clear full lines
+        function clearLines() {
+            let linesCleared = 0;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                let isFull = true;
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c] === 0) {
+                        isFull = false;
+                        break;
+                    }
+                }
+                if (isFull) {
+                    linesCleared++;
+                    // Remove the full row and add an empty row at the top
+                    for (let rowToMove = r; rowToMove > 0; rowToMove--) {
+                        board[rowToMove] = board[rowToMove - 1].slice(); // Copy the row above
+                    }
+                    board[0] = Array(COLS).fill(0); // Add a new empty row at the top
+                    r++; // Re-check the current row as it's now a new row
+                }
+            }
+            if (linesCleared > 0) {
+                // Update score based on lines cleared (Tetris scoring system)
+                switch (linesCleared) {
+                    case 1: score += 100; break;
+                    case 2: score += 300; break;
+                    case 3: score += 500; break;
+                    case 4: score += 800; break; // Tetris!
+                }
+                scoreDisplay.textContent = score;
+            }
+        }
+
+        // Function to rotate a piece
+        function rotate(piece) {
+            // Transpose the matrix (rows to columns)
+            let newShape = piece.shape.map((row, i) =>
+                row.map((val, j) => piece.shape[piece.shape.length - 1 - j][i])
             );
-            displayUniversities(filtered);
+
+            // Check if rotation is possible without collision
+            if (canMove(piece, currentX, currentY, newShape)) {
+                currentPiece.shape = newShape;
+            } else {
+                // Wall kick logic (simplified)
+                // Try moving left/right if rotation is blocked
+                const kicks = [
+                    [0, 0], [-1, 0], [1, 0], [0, -1], [0, 1] // Basic kicks
+                ];
+                for (const [dx, dy] of kicks) {
+                    if (canMove(piece, currentX + dx, currentY + dy, newShape)) {
+                        currentX += dx;
+                        currentY += dy;
+                        currentPiece.shape = newShape;
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Function to move the piece down
+        function drop() {
+            if (gameOver || isPaused) return;
+
+            if (canMove(currentPiece, currentX, currentY + 1, currentPiece.shape)) {
+                currentY++;
+            } else {
+                lockPiece();
+            }
+            draw();
+        }
+
+        // Function to move the piece left
+        function moveLeft() {
+            if (gameOver || isPaused) return;
+            if (canMove(currentPiece, currentX - 1, currentY, currentPiece.shape)) {
+                currentX--;
+            }
+            draw();
+        }
+
+        // Function to move the piece right
+        function moveRight() {
+            if (gameOver || isPaused) return;
+            if (canMove(currentPiece, currentX + 1, currentY, currentPiece.shape)) {
+                currentX++;
+            }
+            draw();
+        }
+
+        // Function for hard drop
+        function hardDrop() {
+            if (gameOver || isPaused) return;
+            while (canMove(currentPiece, currentX, currentY + 1, currentPiece.shape)) {
+                currentY++;
+            }
+            lockPiece();
+            draw();
+        }
+
+        // Function to spawn a new piece
+        function spawnPiece() {
+            currentPiece = nextPiece;
+            nextPiece = generatePiece();
+            currentX = Math.floor((COLS - currentPiece.shape[0].length) / 2); // Center horizontally
+            currentY = -currentPiece.shape.length; // Start above the board
+
+            drawNextPiece(); // Update next piece display
+
+            // Check for immediate game over (if new piece spawns on existing blocks)
+            if (!canMove(currentPiece, currentX, currentY, currentPiece.shape)) {
+                endGame();
+            }
+        }
+
+        // Main drawing function
+        function draw() {
+            drawBoard(); // Draw the static board
+            if (!gameOver) {
+                drawPiece(currentPiece, currentX, currentY, ctx); // Draw the falling piece
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!isPaused && !gameOver) {
+                drop();
+            }
+        }
+
+        // Start the game
+        function startGame() {
+            if (!gameOver && !isPaused) return; // Prevent starting if already playing and not paused
+            initBoard();
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameOver = false;
+            isPaused = false;
+            gameOverMessage.classList.add('hidden'); // Hide game over message
+
+            // Generate initial pieces
+            nextPiece = generatePiece();
+            spawnPiece();
+
+            // Set up game interval (adjust speed as needed)
+            clearInterval(gameInterval); // Clear any existing interval
+            gameInterval = setInterval(gameLoop, 1000); // Drop every 1 second
+            draw(); // Initial draw
+        }
+
+        // Pause/Resume game
+        function togglePause() {
+            if (gameOver) return;
+            isPaused = !isPaused;
+            pauseButton.textContent = isPaused ? '재개' : '일시정지';
+            if (isPaused) {
+                clearInterval(gameInterval);
+            } else {
+                gameInterval = setInterval(gameLoop, 1000);
+            }
+        }
+
+        // End the game
+        function endGame() {
+            gameOver = true;
+            clearInterval(gameInterval);
+            gameOverMessage.classList.remove('hidden');
+            startButton.textContent = '시작'; // Reset button text
+            pauseButton.textContent = '일시정지';
+        }
+
+        // Restart the game
+        function restartGame() {
+            endGame(); // Ensure game stops
+            startGame(); // Start fresh
+        }
+
+        // Function to set canvas dimensions dynamically
+        function setCanvasDimensions() {
+            const gameContainer = document.querySelector('.game-container');
+            // Calculate available width for the canvas
+            // Subtract padding from the container
+            const containerPaddingX = parseFloat(window.getComputedStyle(gameContainer).paddingLeft) +
+                                      parseFloat(window.getComputedStyle(gameContainer).paddingRight);
+            const availableWidth = gameContainer.clientWidth - containerPaddingX;
+
+            // Set a maximum width for the canvas to prevent it from becoming too large on very wide screens
+            // Aim for a reasonable size, e.g., max 300px width for the game board
+            const desiredCanvasWidth = Math.min(availableWidth * 0.95, 300); // Use up to 95% of available width, max 300px
+
+            // Calculate BLOCK_SIZE based on the desired canvas width and number of columns
+            BLOCK_SIZE = Math.floor(desiredCanvasWidth / COLS);
+
+            // Set main canvas dimensions
+            canvas.width = BLOCK_SIZE * COLS;
+            canvas.height = BLOCK_SIZE * ROWS;
+
+            // Set nextPieceCanvas dimensions
+            // Next piece display usually needs space for 4x4 blocks (max Tetromino size)
+            nextPieceCanvas.width = BLOCK_SIZE * 4;
+            nextPieceCanvas.height = BLOCK_SIZE * 3; // A bit less height is fine for preview
+        }
+
+        // Event listeners for keyboard controls
+        document.addEventListener('keydown', e => {
+            if (gameOver || isPaused) return;
+            switch (e.key) {
+                case 'ArrowLeft':
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    moveRight();
+                    break;
+                case 'ArrowDown':
+                    drop(); // Soft drop
+                    break;
+                case 'ArrowUp':
+                    rotate(currentPiece);
+                    break;
+                case ' ': // Spacebar for hard drop
+                    hardDrop();
+                    break;
+            }
         });
 
-        // Initial display of all universities when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            displayUniversities(universities);
+        // Event listeners for button controls
+        startButton.addEventListener('click', startGame);
+        pauseButton.addEventListener('click', togglePause);
+        restartButton.addEventListener('click', restartGame);
+
+        // Mobile controls
+        moveLeftButton.addEventListener('click', moveLeft);
+        moveRightButton.addEventListener('click', moveRight);
+        moveDownButton.addEventListener('click', drop);
+        rotateButton.addEventListener('click', () => rotate(currentPiece));
+
+        // Initial setup and resize listener
+        window.onload = function() {
+            setCanvasDimensions(); // Set dimensions on load
+            initBoard();
+            drawBoard();
+            drawNextPiece(); // Draw initial next piece (or empty if not yet generated)
+        };
+
+        window.addEventListener('resize', () => {
+            setCanvasDimensions(); // Recalculate dimensions on resize
+            draw(); // Redraw the game board and current piece
+            drawNextPiece(); // Redraw the next piece
         });
     </script>
 </body>
